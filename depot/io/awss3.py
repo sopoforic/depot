@@ -8,7 +8,7 @@ from __future__ import absolute_import
 
 from datetime import datetime
 import uuid
-from boto.s3.connection import S3Connection
+from boto.s3.connection import S3Connection, OrdinaryCallingFormat
 from depot._compat import unicode_text
 from depot.utils import make_content_disposition
 
@@ -111,6 +111,9 @@ class S3Storage(FileStorage):
         kw = {}
         if host is not None:
             kw['host'] = host
+        if '.' in bucket:
+            kw['calling_format'] = OrdinaryCallingFormat()
+
         self._conn = S3Connection(access_key_id, secret_access_key, **kw)
         bucket = self._conn.lookup(bucket) or self._conn.create_bucket(bucket)
         self._bucket_driver = BucketDriver(bucket, prefix)
