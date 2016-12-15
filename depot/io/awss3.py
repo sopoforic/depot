@@ -8,6 +8,7 @@ from __future__ import absolute_import
 
 from datetime import datetime
 import uuid
+from boto.s3 import connect_to_region
 from boto.s3.connection import S3Connection, OrdinaryCallingFormat
 from depot._compat import unicode_text
 from depot.utils import make_content_disposition
@@ -98,7 +99,7 @@ class S3Storage(FileStorage):
     """
 
     def __init__(self, access_key_id, secret_access_key, bucket=None, host=None,
-                 policy=None, encrypt_key=False, prefix=''):
+                 policy=None, encrypt_key=False, prefix='', region=None):
         policy = policy or CANNED_ACL_PUBLIC_READ
         assert policy in [CANNED_ACL_PUBLIC_READ, CANNED_ACL_PRIVATE], (
             "Key policy must be %s or %s" % (CANNED_ACL_PUBLIC_READ, CANNED_ACL_PRIVATE))
@@ -111,10 +112,13 @@ class S3Storage(FileStorage):
         kw = {}
         if host is not None:
             kw['host'] = host
-        if '.' in bucket:
+        if '.' in bucket and region:
             kw['calling_format'] = OrdinaryCallingFormat()
-
-        self._conn = S3Connection(access_key_id, secret_access_key, **kw)
+            kw['aws_access_key_id'] = access_key_id
+            kw['aws_secret_access_key'] = secret_access_key
+            self._conn = connect_to_region(region, **kw)
+        else:
+            self._conn = S3Connection(access_key_id, secret_access_key, **kw)
         bucket = self._conn.lookup(bucket) or self._conn.create_bucket(bucket)
         self._bucket_driver = BucketDriver(bucket, prefix)
 
